@@ -1,0 +1,270 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Global Safety Net
+    // ===============================================================
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isVerified() {
+      return isAuthenticated() && request.auth.token.email_verified == true;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && 
+        (
+          (request.auth.token.email.lower() == "pbcc.web@gmail.com" || request.auth.token.email.lower() == "franknorell@gmail.com" || request.auth.token.email.lower() == "stevieblunder@gmail.com" || request.auth.token.email.lower() == "pbcc.treasurer@gmail.com") ||
+          (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin')
+        );
+    }
+
+    function hasRole(role) {
+      return isAuthenticated() && (
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == role) ||
+        isAdmin()
+      );
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // ===============================================================
+    // Schema Validators
+    // ===============================================================
+
+    function isValidUser(data) {
+      return (!('uid' in data) || (data.uid == request.auth.uid || isAdmin())) &&
+             (!('email' in data) || (data.email is string && data.email.size() <= 100)) &&
+             (!('displayName' in data) || (data.displayName is string && data.displayName.size() <= 100)) &&
+             (!('firstName' in data) || (data.firstName is string && data.firstName.size() <= 50)) &&
+             (!('lastName' in data) || (data.lastName is string && data.lastName.size() <= 50)) &&
+             (!('role' in data) || data.role in ['guest', 'future_member', 'member', 'leader', 'financial', 'social', 'admin', 'partner_club', 'instructor']) &&
+             (!('onboardingStatus' in data) || data.onboardingStatus is string) &&
+             (!('onboardingPath' in data) || data.onboardingPath in ['beginner', 'pro', 'former']) &&
+             (!('clubWebsite' in data) || data.clubWebsite is string) &&
+             (!('clubPhone' in data) || (data.clubPhone is string || data.clubPhone == null)) &&
+             (!('clubDescription' in data) || (data.clubDescription is string || data.clubDescription == null)) &&
+             (!('clubAdultPrice' in data) || data.clubAdultPrice is number) &&
+             (!('clubChildPrice' in data) || data.clubChildPrice is number);
+    }
+
+    function isValidEvent(data) {
+      return data.title is string && data.title.size() <= 200 &&
+             data.date is timestamp &&
+             data.type in ['pool', 'river', 'social', 'training'] &&
+             isValidId(data.leaderId) &&
+             data.participants is list && data.participants.size() <= 100;
+    }
+
+    function isValidPayment(data) {
+      return data.amount is number && data.amount >= 0 &&
+             data.type is string && data.type.size() <= 100 &&
+             data.status is string && data.status.size() <= 50 &&
+             (!('uid' in data) || data.uid is string) &&
+             (!('timestamp' in data) || data.timestamp == request.time);
+    }
+
+    function isValidFeedback(data) {
+      return data.type in ['Correction', 'New Idea'] &&
+             data.submitterName is string && data.submitterName.size() <= 200 &&
+             data.submitterId == request.auth.uid &&
+             (!('page' in data) || (data.page is string && data.page.size() <= 200)) &&
+             (!('locationOnPage' in data) || (data.locationOnPage is string && data.locationOnPage.size() <= 500)) &&
+             (!('currentText' in data) || (data.currentText is string && data.currentText.size() <= 2000)) &&
+             (!('suggestedText' in data) || (data.suggestedText is string && data.suggestedText.size() <= 2000)) &&
+             (!('description' in data) || (data.description is string && data.description.size() <= 3000)) &&
+             (!('isCompleted' in data) || data.isCompleted == false) &&
+             data.createdAt == request.time;
+    }
+
+    // ===============================================================
+    // Collection Rules
+    // ===============================================================
+
+    function isBecomingPartner(existing, incoming) {
+      return (existing == null || existing.role != 'partner_club') && incoming.role == 'partner_club';
+    }
+    
+    function isExistingPartner(data) {
+      return data.role == 'partner_club';
+    }
+
+    match /_system_check/{docId} {
+      allow read, write: if true;
+    }
+
+    // User profiles
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow create: if (isOwner(userId) || isAdmin()) && isValidUser(incoming());
+      allow update: if (
+        (isOwner(userId) && isValidUser(incoming()) && 
+        (
+          !incoming().diff(existing()).affectedKeys().hasAny(['role', 'memberNumber']) ||
+          isBecomingPartner(existing(), incoming()) ||
+          isExistingPartner(existing()) // Partners can update their own club details
+        )) || isAdmin()
+      );
+      allow delete: if isAdmin();
+    }
+
+    // Events
+    match /events/{eventId} {
+      allow read: if true;
+      allow create: if (isAdmin() || hasRole('leader') || hasRole('instructor')) && isValidEvent(incoming());
+      allow update: if isAdmin() || (
+        ( (hasRole('leader') || hasRole('instructor')) && isValidEvent(incoming())) || (
+          isAuthenticated() && 
+          incoming().diff(existing()).affectedKeys().hasOnly(['participants', 'boatId']) &&
+          incoming().participants.size() <= existing().maxParticipants
+        )
+      );
+      allow delete: if isAdmin();
+    }
+
+    // Boats
+    match /boats/{boatId} {
+      allow read: if true;
+      allow write: if isAdmin() || hasRole('leader') || hasRole('instructor');
+    }
+
+    // Payments
+    match /payments/{paymentId} {
+      allow read: if isAuthenticated() && (resource.data.uid == request.auth.uid || isAdmin() || hasRole('financial'));
+      allow create: if isAuthenticated() && isValidPayment(incoming()) && (
+        (incoming().uid == request.auth.uid && incoming().type in ['pool_session', 'membership', 'beginner_course', 'boat_rental', 'coupon_purchase', 'club_coupons', 'manual']) || 
+        isAdmin() || 
+        hasRole('financial')
+      );
+      allow update: if isAdmin() || hasRole('financial');
+      allow delete: if isAdmin();
+    }
+
+    // Content/Settings
+    match /content/{contentId} { allow read: if true; allow write: if isAdmin(); }
+    match /settings/{settingId} { allow read: if isAuthenticated(); allow write: if isAdmin(); }
+    match /documents/{docId} { allow read: if true; allow write: if isAdmin(); }
+    match /faqs/{faqId} { allow read: if true; allow write: if isAdmin(); }
+    match /committee/{memberId} { allow read: if true; allow write: if isAdmin(); }
+    match /annual_reports/{reportId} { allow read: if true; allow write: if isAdmin(); }
+    match /partner_clubs/{clubId} { allow read: if true; allow write: if isAdmin(); }
+    match /settings/partner_page { allow read: if true; allow write: if isAdmin(); }
+    match /coupons/{couponId} { 
+      allow read: if isAuthenticated() && (isAdmin() || hasRole('financial') || resource.data.ownerId == request.auth.uid || !('ownerId' in resource.data));
+      allow update: if isAuthenticated() && (
+        isAdmin() || 
+        (incoming().diff(existing()).affectedKeys().hasOnly(['used', 'usedBy', 'usedAt']) && incoming().used == true && existing().used == false)
+      );
+      allow write: if isAdmin(); 
+    }
+    match /webhook_logs/{logId} { allow read: if isAdmin(); allow write: if true; } // Allow write for diagnostics
+    match /expenses/{expenseId} { 
+      allow read: if isAdmin() || hasRole('financial'); 
+      allow write: if isAdmin() || hasRole('financial') || isAuthenticated(); // Allow users to upload receipts
+    }
+    
+    // Rentals
+    match /rentals/{rentalId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && incoming().uid == request.auth.uid;
+      allow update, delete: if isAdmin() || hasRole('leader');
+    }
+
+    // Feedback & Tasks
+    match /feedback/{feedbackId} {
+      allow read: if isAdmin() || hasRole('leader');
+      allow create: if isAuthenticated() && isValidFeedback(incoming());
+      allow update: if (isAdmin() || hasRole('leader')) && 
+                    (incoming().diff(existing()).affectedKeys().hasAny(['isCompleted', 'adminNote', 'updatedAt']));
+      allow delete: if isAdmin();
+    }
+
+    // Session Logs (Logbook)
+    match /session_logs/{logId} {
+      allow read: if isAuthenticated() && (
+        isAdmin() || 
+        hasRole('leader') || 
+        (resource != null && resource.data.leaderId == request.auth.uid) ||
+        (resource != null && resource.data.status == 'completed')
+      );
+      allow create: if isAuthenticated() && (isAdmin() || hasRole('leader') || hasRole('instructor'));
+      allow update: if isAuthenticated() && (
+        isAdmin() || 
+        (resource != null && resource.data.leaderId == request.auth.uid) || 
+        hasRole('leader')
+      );
+      allow delete: if isAdmin();
+    }
+
+    // Polls & Forum
+    match /polls/{pollId} {
+      allow read: if isAuthenticated() && (
+        resource == null ||
+        !('restriction' in resource.data) || 
+        resource.data.restriction != 'leaders_only' || 
+        isAdmin() || 
+        hasRole('leader') || 
+        hasRole('instructor')
+      );
+      allow create: if isAuthenticated() && (isAdmin() || hasRole('leader') || hasRole('instructor') || hasRole('social'));
+      allow update: if isAuthenticated() && (
+        isAdmin() || 
+        (resource != null && resource.data.createdBy == request.auth.uid) ||
+        incoming().diff(existing()).affectedKeys().hasAny(['votes', 'comments'])
+      );
+      allow delete: if isAdmin();
+    }
+
+    // Stories (Paddler Diary)
+    match /stories/{storyId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && (
+        isAdmin() || 
+        hasRole('social') || 
+        (resource != null && resource.data.submitterId == request.auth.uid)
+      );
+      allow delete: if isAdmin() || hasRole('social');
+    }
+
+    // Social Groups
+    match /social_groups/{groupId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin() || hasRole('social');
+    }
+
+    // Newsletters
+    match /newsletters/{newsletterId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin() || hasRole('social');
+    }
+
+    // Snippets
+    match /snippets/{snippetId} {
+      allow read: if isAuthenticated() && (isAdmin() || hasRole('social') || hasRole('leader') || hasRole('instructor'));
+      allow write: if isAuthenticated() && (isAdmin() || hasRole('social') || hasRole('leader') || hasRole('instructor'));
+    }
+  }
+}

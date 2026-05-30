@@ -1,0 +1,295 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "User profile with roles, onboarding status, and member details.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "displayName": { "type": "string" },
+        "role": { "type": "string", "enum": ["guest", "future_member", "member", "leader", "financial", "social", "admin", "partner_club"] },
+        "onboardingStatus": { "type": "string", "enum": ["none", "beginner_pending_payment", "beginner_paid", "pro_pending_approval", "former_pending_payment", "pool_passed", "membership_paid"] },
+        "abilityProfile": { "type": "string" },
+        "membershipExpiry": { "type": "string", "format": "date-time" },
+        "onboardingPath": { "type": "string", "enum": ["beginner", "pro", "former"] },
+        "firstName": { "type": "string" },
+        "lastName": { "type": "string" },
+        "yearOfBirth": { "type": "number" },
+        "sex": { "type": "string" },
+        "mobileNumber": { "type": "string" },
+        "houseNameNumberStreet": { "type": "string" },
+        "town": { "type": "string" },
+        "county": { "type": "string" },
+        "postcode": { "type": "string" },
+        "memberNumber": { "type": "string" },
+        "disabilityDetails": { "type": "string" },
+        "hasDisability": { "type": "boolean" },
+        "emergencyContactName": { "type": "string" },
+        "emergencyContactPhone": { "type": "string" },
+        "emergencyContactRelationship": { "type": "string" },
+        "yearsPaddling": { "type": "string" },
+        "britishCanoeingAwards": { "type": "string" },
+        "britishCanoeingQualifications": { "type": "string" },
+        "britishCanoeingMember": { "type": "boolean" },
+        "leeValleyAssessment": { "type": "string" },
+        "firstAidSafeguarding": { "type": "string" },
+        "navigationQualifications": { "type": "string" },
+        "kayakingLeadershipExperience": { "type": "string" },
+        "nonKayakingLeadershipExperience": { "type": "string" },
+        "training": { "type": "string" },
+        "experience": { "type": "string" },
+        "paddlingDescription": { "type": "string" },
+        "newsletter": { "type": "boolean" },
+        "interestedInSeaKayaking": { "type": "boolean" },
+        "interestedInRacing": { "type": "boolean" },
+        "racingDivision": { "type": "string" },
+        "includeInDirectory": { "type": "boolean" },
+        "photo": { "type": "string" },
+        "keyHolder": { "type": "boolean" },
+        "committeeMember": { "type": "boolean" },
+        "boatStorage": { "type": "string" },
+        "excludeFromSpecialMailList": { "type": "boolean" },
+        "thamesLeader": { "type": "boolean" },
+        "leaderTraining": { "type": "boolean" },
+        "howDidYouHear": { "type": "string" },
+        "expiresOn": { "type": "string", "format": "date-time" },
+        "systemEmail": { "type": "string" },
+        "renewedOn": { "type": "string", "format": "date-time" },
+        "memberSince": { "type": "string", "format": "date-time" },
+        "linkedTo": { "type": "string" },
+        "membershipState": { "type": "string" },
+        "membershipType": { "type": "string" },
+        "poolApprovedBy": { "type": "string" },
+        "poolApprovalNotes": { "type": "string" },
+        "poolApprovalDate": { "type": "string", "format": "date-time" },
+        "selectedPoolSessionId": { "type": "string" },
+        "clubAdultPrice": { "type": "number", "description": "Custom price per adult coupon for this partner club" },
+        "clubChildPrice": { "type": "number", "description": "Custom price per child coupon for this partner club" },
+        "clubDescription": { "type": "string" },
+        "clubWebsite": { "type": "string" },
+        "clubPhone": { "type": "string" }
+      },
+      "required": ["uid", "email", "role"]
+    },
+    "PartnerPageContent": {
+      "title": "Partner Page Content",
+      "description": "Editable content for the 'Become a Partner' page.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "subtitle": { "type": "string" },
+        "partnershipText": { "type": "string" },
+        "equipmentText": { "type": "string" }
+      }
+    },
+    "Event": {
+      "title": "Club Event",
+      "description": "Events like pool sessions, river tours, and social gatherings.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "date": { "type": "string", "format": "date-time" },
+        "type": { "type": "string", "enum": ["pool", "river", "social", "training"] },
+        "leaderId": { "type": "string" },
+        "maxParticipants": { "type": "number" },
+        "participants": { "type": "array", "items": { "type": "string" } },
+        "location": { "type": "string" },
+        "showMap": { "type": "boolean" }
+      },
+      "required": ["title", "date", "type", "leaderId"]
+    },
+    "Boat": {
+      "title": "Club Boat",
+      "description": "Inventory of club boats.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "type": { "type": "string", "enum": ["Sea Kayak", "Whitewater", "General Purpose", "Racing", "Surfski"] },
+        "status": { "type": "string", "enum": ["available", "maintenance", "rented"] },
+        "brand": { "type": "string" },
+        "model": { "type": "string" },
+        "colour": { "type": "string" },
+        "paddlerWeight": { "type": "string" },
+        "notes": { "type": "string" },
+        "description": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "location": { "type": "string" },
+        "addedAt": { "type": "string", "format": "date-time" },
+        "costPerDay": { "type": "number" },
+        "costPerWeekend": { "type": "number" },
+        "costPerDayOver": { "type": "number" },
+        "length": { "type": "string" }
+      },
+      "required": ["name", "type", "status"]
+    },
+    "Payment": {
+      "title": "Payment Record",
+      "description": "Records of payments made by users.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "amount": { "type": "number" },
+        "type": { "type": "string", "enum": ["pool_session", "membership"] },
+        "status": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "amount", "type", "status"]
+    },
+    "Document": {
+      "title": "Club Document",
+      "description": "Uploaded files and documents.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "url": { "type": "string" },
+        "category": { "type": "string" }
+      },
+      "required": ["title", "url"]
+    },
+    "Content": {
+      "title": "Page Content",
+      "description": "Editable content for various pages.",
+      "type": "object",
+      "properties": {
+        "pageId": { "type": "string" },
+        "sectionId": { "type": "string" },
+        "content": { "type": "string" },
+        "lastUpdated": { "type": "string", "format": "date-time" },
+        "updatedBy": { "type": "string" }
+      },
+      "required": ["pageId", "sectionId", "content"]
+    },
+    "Rental": {
+      "title": "Boat Rental",
+      "description": "Records of boat rentals by members.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "boatId": { "type": "string" },
+        "boatName": { "type": "string" },
+        "startDate": { "type": "string", "format": "date-time" },
+        "endDate": { "type": "string", "format": "date-time" },
+        "totalPrice": { "type": "number" },
+        "extras": { "type": "string" },
+        "status": { "type": "string", "enum": ["active", "completed", "cancelled"] }
+      },
+      "required": ["uid", "boatId", "startDate", "endDate", "totalPrice"]
+    },
+    "Expense": {
+      "title": "Club Expense",
+      "description": "Records of club expenses uploaded by privileged members.",
+      "type": "object",
+      "properties": {
+        "amount": { "type": "number" },
+        "description": { "type": "string" },
+        "authorisedBy": { "type": "string", "enum": ["Chairperson", "Treasurer", "Equipment Officer"] },
+        "imageUrl": { "type": "string" },
+        "uploadedBy": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["amount", "description", "authorisedBy", "uploadedBy", "timestamp"]
+    },
+    "VisibilitySettings": {
+      "title": "Field Visibility Settings",
+      "description": "Defines which user fields are visible to which roles.",
+      "type": "object",
+      "properties": {
+        "leader": { "type": "array", "items": { "type": "string" } },
+        "financial": { "type": "array", "items": { "type": "string" } },
+        "social": { "type": "array", "items": { "type": "string" } },
+        "instructor": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "FAQ": {
+      "title": "Frequently Asked Question",
+      "description": "Common questions and answers for the club.",
+      "type": "object",
+      "properties": {
+        "question": { "type": "string" },
+        "answer": { "type": "string" },
+        "category": { "type": "string" },
+        "order": { "type": "number" }
+      },
+      "required": ["question", "answer"]
+    },
+    "CommitteeMember": {
+      "title": "Committee Member",
+      "description": "Club committee members and their roles.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "role": { "type": "string" },
+        "photoUrl": { "type": "string" },
+        "order": { "type": "number" }
+      },
+      "required": ["name", "role"]
+    },
+    "AnnualReport": {
+      "title": "Annual Report",
+      "description": "Yearly financial and trustee reports.",
+      "type": "object",
+      "properties": {
+        "year": { "type": "number" },
+        "trusteesReportUrl": { "type": "string" },
+        "balanceSheetUrl": { "type": "string" },
+        "profitAndLossUrl": { "type": "string" },
+        "membershipStatsUrl": { "type": "string" }
+      },
+      "required": ["year"]
+    },
+    "Coupon": {
+      "title": "Booking Coupon",
+      "description": "Single-use codes for pool session bookings.",
+      "type": "object",
+      "properties": {
+        "code": { "type": "string" },
+        "type": { "type": "string", "enum": ["instructor", "child", "club", "custom"] },
+        "used": { "type": "boolean" },
+        "usedBy": { "type": "string" },
+        "usedAt": { "type": "string", "format": "date-time" },
+        "ownerId": { "type": "string" },
+        "batchId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["code", "used"]
+    },
+    "Feedback": {
+      "title": "Site Feedback / Task",
+      "description": "Feedback, corrections, or new ideas for the website.",
+      "type": "object",
+      "properties": {
+        "type": { "type": "string", "enum": ["Correction", "New Idea"] },
+        "submitterName": { "type": "string" },
+        "submitterId": { "type": "string" },
+        "page": { "type": "string" },
+        "locationOnPage": { "type": "string" },
+        "currentText": { "type": "string" },
+        "suggestedText": { "type": "string" },
+        "description": { "type": "string" },
+        "isCompleted": { "type": "boolean" },
+        "adminNote": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["type", "submitterName", "submitterId", "createdAt"]
+    }
+  },
+  "firestore": {
+    "users/{userId}": { "schema": "User", "description": "User profiles" },
+    "events/{eventId}": { "schema": "Event", "description": "Club events" },
+    "boats/{boatId}": { "schema": "Boat", "description": "Club boats" },
+    "payments/{paymentId}": { "schema": "Payment", "description": "Payment records" },
+    "documents/{docId}": { "schema": "Document", "description": "Club documents" },
+    "content/{contentId}": { "schema": "Content", "description": "Editable page content" },
+    "rentals/{rentalId}": { "schema": "Rental", "description": "Boat rental records" },
+    "settings/{settingId}": { "schema": "VisibilitySettings", "description": "Application settings" },
+    "faqs/{faqId}": { "schema": "FAQ", "description": "Frequently asked questions" },
+    "committee/{memberId}": { "schema": "CommitteeMember", "description": "Committee members" },
+    "annual_reports/{reportId}": { "schema": "AnnualReport", "description": "Yearly reports" },
+    "coupons/{couponId}": { "schema": "Coupon", "description": "Booking coupons" },
+    "feedback/{feedbackId}": { "schema": "Feedback", "description": "Site improvement suggestions and tasks" },
+    "settings/partner_page": { "schema": "PartnerPageContent", "description": "Become a Partner page settings" }
+  }
+}
